@@ -43,6 +43,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           ALLOWED_CHAT_ID: ${{ secrets.ALLOWED_CHAT_ID }}
           TIKTOK_COOKIES: ${{ secrets.TIKTOK_COOKIES }}
-          LISTEN_SECONDS: ${{ github.event_name == 'workflow_dispatch' && format('{0}', fromJSON(github.event.inputs.listen_minutes) * 60) || '45' }}
+          LISTEN_MINUTES: ${{ github.event.inputs.listen_minutes || '0' }}
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1600x900x24" python bot.py --once
+

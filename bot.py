@@ -235,7 +235,8 @@ def process_pending_updates():
         print("[!] Erro: TELEGRAM_TOKEN não configurado.")
         return
 
-    listen_seconds = int(os.getenv("LISTEN_SECONDS", "0"))
+    listen_minutes = float(os.getenv("LISTEN_MINUTES", "0") or "0")
+    listen_seconds = int(listen_minutes * 60) if listen_minutes > 0 else int(os.getenv("LISTEN_SECONDS", "45"))
     start_time = time.time()
     session = requests.Session()
     api = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
