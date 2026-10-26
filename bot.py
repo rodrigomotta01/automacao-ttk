@@ -138,10 +138,16 @@ def capture_with_context(context, creator_name):
     detail_page.bring_to_front()
     detail_page.wait_for_load_state("domcontentloaded")
 
-    detail_page.locator("text=Detalhes do criador, text=Creator details").first.wait_for(state="visible", timeout=25000)
+    # Aguarda a página carregar (tenta Detalhes do criador ou Categorias com fallback)
+    try:
+        detail_page.locator("text=Detalhes do criador, text=Creator details, text=Categorias, text=Categories").first.wait_for(state="visible", timeout=25000)
+    except Exception:
+        print("[!] Aviso: cabeçalho demorou a aparecer, prosseguindo com captura...")
+    time.sleep(1)
+
     cat_label = detail_page.locator("text=Categorias, text=Categories").first
     try:
-        cat_label.wait_for(state="visible", timeout=15000)
+        cat_label.wait_for(state="visible", timeout=10000)
         detail_page.locator("text=Valor Bruto da Mercadoria (GMV), text=GMV").first.wait_for(state="visible", timeout=10000)
         detail_page.locator("canvas, svg").nth(3).wait_for(state="visible", timeout=6000)
     except Exception:
