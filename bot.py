@@ -112,7 +112,7 @@ def capture_with_context(context, creator_name):
     print(f"[*] Pesquisa enviada ({time.perf_counter() - t0:.1f}s), aguardando criador na tabela...")
 
     try:
-        page.locator("text=Resultados da pesquisa, text=Encontrar criadores").first.click(timeout=2000)
+        page.get_by_text("Resultados da pesquisa").or_(page.get_by_text("Encontrar criadores")).first.click(timeout=2000)
     except Exception:
         pass
 
@@ -138,38 +138,36 @@ def capture_with_context(context, creator_name):
     detail_page.bring_to_front()
     detail_page.wait_for_load_state("domcontentloaded")
 
-    # Aguarda a página carregar (tenta Detalhes do criador ou Categorias com fallback)
+    # Aguarda a página carregar (usando .or_() válido do Playwright)
+    cat_label = detail_page.get_by_text("Categorias", exact=True).or_(detail_page.get_by_text("Categories", exact=True)).first
     try:
-        detail_page.locator("text=Detalhes do criador, text=Creator details, text=Categorias, text=Categories").first.wait_for(state="visible", timeout=25000)
-    except Exception:
-        print("[!] Aviso: cabeçalho demorou a aparecer, prosseguindo com captura...")
-    time.sleep(1)
-
-    cat_label = detail_page.locator("text=Categorias, text=Categories").first
-    try:
-        cat_label.wait_for(state="visible", timeout=10000)
-        detail_page.locator("text=Valor Bruto da Mercadoria (GMV), text=GMV").first.wait_for(state="visible", timeout=10000)
+        cat_label.wait_for(state="visible", timeout=20000)
+        detail_page.get_by_text("GMV", exact=False).first.wait_for(state="visible", timeout=10000)
         detail_page.locator("canvas, svg").nth(3).wait_for(state="visible", timeout=6000)
     except Exception:
-        pass
+        print("[!] Aviso: carregamento parcial do cabeçalho, prosseguindo...")
     time.sleep(0.5)
 
     # Print 2: Hover no valor ao lado de 'Categorias'
     print(f"[*] Fazendo hover em 'Categorias' ({time.perf_counter() - t0:.1f}s)...")
-    cat_value = cat_label.locator("xpath=following-sibling::*[1]")
-    if cat_value.count() > 0 and cat_value.first.is_visible():
-        inner_target = cat_value.locator("*").first
-        if inner_target.count() > 0 and inner_target.is_visible():
-            inner_target.hover()
-        else:
-            cat_value.first.hover()
-    else:
-        box = cat_label.bounding_box()
-        if box:
-            detail_page.mouse.move(box["x"] + box["width"] + 50, box["y"] + box["height"] / 2)
+    try:
+        if cat_label.is_visible():
+            cat_value = cat_label.locator("xpath=following-sibling::*[1]")
+            if cat_value.count() > 0 and cat_value.first.is_visible():
+                inner_target = cat_value.locator("*").first
+                if inner_target.count() > 0 and inner_target.is_visible():
+                    inner_target.hover(timeout=3000)
+                else:
+                    cat_value.first.hover(timeout=3000)
+            else:
+                box = cat_label.bounding_box(timeout=3000)
+                if box:
+                    detail_page.mouse.move(box["x"] + box["width"] + 50, box["y"] + box["height"] / 2)
+    except Exception as e:
+        print(f"[!] Aviso no hover: {e}")
 
     try:
-        detail_page.locator("text=Categoria do produto:, text=Product category:").first.wait_for(state="visible", timeout=1500)
+        detail_page.get_by_text("Categoria do produto:").or_(detail_page.get_by_text("Product category:")).first.wait_for(state="visible", timeout=1500)
         time.sleep(0.15)
     except Exception:
         time.sleep(0.3)
@@ -194,7 +192,7 @@ def capture_with_context(context, creator_name):
     }""")
 
     try:
-        detail_page.locator("text=Tendências, text=TRENDS").first.wait_for(state="visible", timeout=4000)
+        detail_page.get_by_text("Tendências").or_(detail_page.get_by_text("TRENDS")).first.wait_for(state="visible", timeout=4000)
     except Exception:
         pass
     time.sleep(0.6)
