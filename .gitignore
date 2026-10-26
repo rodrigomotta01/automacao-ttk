@@ -1,0 +1,7 @@
+chrome_profile/
+__pycache__/
+*.png
+*.log
+*.pid
+.env
+storage_state.json

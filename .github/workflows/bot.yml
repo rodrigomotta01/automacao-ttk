@@ -1,0 +1,48 @@
+name: Bot TikTok Shop (Telegram)
+
+on:
+  # Executa automaticamente a cada 5 minutos para verificar se voce mandou mensagens no Telegram
+  schedule:
+    - cron: '*/5 * * * *'
+  # Permite acionar manualmente pelo celular/navegador ou deixar escutando em tempo real
+  workflow_dispatch:
+    inputs:
+      listen_minutes:
+        description: 'Minutos escutando em tempo real (0 = apenas processa mensagens pendentes e encerra)'
+        required: false
+        default: '30'
+
+concurrency:
+  group: tiktok-telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Instalar dependências e Chromium + Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Executar Bot (Processar fila / Escutar Telegram)
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          ALLOWED_CHAT_ID: ${{ secrets.ALLOWED_CHAT_ID }}
+          TIKTOK_COOKIES: ${{ secrets.TIKTOK_COOKIES }}
+          LISTEN_SECONDS: ${{ github.event_name == 'workflow_dispatch' && format('{0}', fromJSON(github.event.inputs.listen_minutes) * 60) || '45' }}
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 1600x900x24" python bot.py --once
